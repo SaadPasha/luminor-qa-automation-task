@@ -29,4 +29,7 @@ bin/
 ### Mac OS ###
 .DS_Store
 ./.idea
+### Windows Local ###
 .gradle
+/build
+/allure-results
