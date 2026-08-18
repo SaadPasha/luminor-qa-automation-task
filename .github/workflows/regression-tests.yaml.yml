@@ -1,0 +1,115 @@
+name: Regression Tests
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: Run API tests - Regression Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Clean previous build
+        run: ./gradlew clean
+
+      - name: Restore Allure history
+        uses: actions/cache@v4
+        with:
+          path: build/allure-results/history
+          key: allure-history-${{ github.run_id }}
+          restore-keys: |
+            allure-history-
+
+      - name: Run regression tests
+        id: regression-tests
+        continue-on-error: true
+        run: ./gradlew regressionTest
+
+      - name: Generate Allure report
+        if: always()
+        run: ./gradlew allureReport
+
+      - name: Verify Allure report
+        if: always()
+        run: |
+          test -f build/reports/allure-report/allureReport/index.html
+          echo "Allure report generated successfully"
+
+      - name: Preserve Allure history
+        if: always()
+        run: |
+          rm -rf build/allure-results/history
+          mkdir -p build/allure-results/history
+          cp -r \
+            build/reports/allure-report/allureReport/history/. \
+            build/allure-results/history/
+
+      - name: Add .nojekyll
+        if: always()
+        run: touch build/reports/allure-report/allureReport/.nojekyll
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: build/allure-results
+          retention-days: 7
+
+      - name: Configure GitHub Pages
+        if: always()
+        uses: actions/configure-pages@v5
+
+      - name: Upload Allure report for GitHub Pages
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: build/reports/allure-report/allureReport
+
+      - name: Fail workflow when tests failed
+        if: steps.regression-tests.outcome == 'failure'
+        run: |
+          echo "One or more API tests failed"
+          exit 1
+
+  deploy:
+    name: Publish Allure report
+    needs: tests
+    if: ${{ always() && needs.tests.result != 'cancelled' }}
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy Allure report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
