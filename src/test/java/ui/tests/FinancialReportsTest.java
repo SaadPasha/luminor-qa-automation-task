@@ -6,19 +6,19 @@ import io.qameta.allure.Story;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import ui.BaseUiTest;
+import ui.BaseUI;
 import ui.pages.FinancialReportsPage;
 import ui.pages.HomePage;
 
 import static io.qameta.allure.Allure.step;
 
-class FinancialReportsTest extends BaseUiTest {
+class FinancialReportsTest extends BaseUI {
 
     private final HomePage homePage = new HomePage();
-//    private final FinancialReportsPage financialReportsPage = new FinancialReportsPage();
 
     @Test
     @Tag("regression")
+    @Tag("sanity")
     @Feature("Luminor website navigation")
     @Story("Financial reports on Internet Bank Content Site")
     @DisplayName("2026 financial report is available from the main menu")

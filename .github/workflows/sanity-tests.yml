@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   tests:
-    name: Run API tests - Sanity Suite
+    name: Run tests - Sanity Suite
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
