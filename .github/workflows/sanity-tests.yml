@@ -4,6 +4,7 @@ on:
   push:
     branches-ignore:
       - master
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,6 +16,7 @@ concurrency:
 jobs:
   tests:
     name: Run tests - Sanity Suite
+    if: github.ref_name != 'master'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
