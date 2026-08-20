@@ -90,6 +90,12 @@ desired.
 
 ## Running the Tests
 
+---
+
+**__I would recommend simply Fork the repository and execute workflows in their own fork, either manually OR test the
+automatic triggers.**__
+
+---
 ### Prerequisites
 
 - Java 21
