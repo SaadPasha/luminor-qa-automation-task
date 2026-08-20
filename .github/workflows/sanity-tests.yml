@@ -1,0 +1,119 @@
+name: Run - Sanity Suite
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sanity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    name: Run API tests - Sanity Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Allure CLI
+        run: npm install --global allure-commandline
+
+      - name: Verify Allure CLI
+        run: allure --version
+
+      - name: Clean previous build
+        run: ./gradlew clean
+
+      - name: Restore sanity Allure history
+        uses: actions/cache/restore@v4
+        with:
+          path: allure-history
+          key: allure-history-sanity-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-history-sanity-${{ github.ref_name }}-
+
+      - name: Add previous history to Allure results
+        run: |
+          if [ -d "allure-history" ]; then
+            mkdir -p build/allure-results/history
+            cp -r allure-history/. build/allure-results/history/
+            echo "Previous sanity history restored"
+          else
+            echo "No previous sanity history found"
+          fi
+
+      - name: Run sanity tests
+        id: sanity-tests
+        continue-on-error: true
+        run: ./gradlew sanityTest
+
+      - name: Verify Allure report
+        if: always()
+        run: |
+          test -f build/allure-report/index.html
+          echo "Sanity Allure report generated successfully"
+
+      - name: Collect updated sanity history
+        if: always()
+        run: |
+          if [ -d "build/allure-report/history" ]; then
+            rm -rf allure-history
+            mkdir -p allure-history
+            cp -r build/allure-report/history/. allure-history/
+            echo "Updated sanity history collected"
+          else
+            echo "Sanity history was not generated"
+          fi
+
+      - name: Save sanity Allure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: allure-history
+          key: allure-history-sanity-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload sanity Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-allure-results-${{ github.run_number }}
+          path: build/allure-results
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload sanity Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sanity-allure-report-${{ github.run_number }}
+          path: build/allure-report
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Fail workflow when sanity tests fail
+        if: steps.sanity-tests.outcome == 'failure'
+        run: |
+          echo "One or more sanity tests failed"
+          exit 1

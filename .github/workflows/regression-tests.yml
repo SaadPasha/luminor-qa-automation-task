@@ -1,8 +1,11 @@
 name: Run - Regression Suite
 
 on:
-  workflow_dispatch:
-  push:
+  pull_request:
+    branches:
+      - master
+    types:
+      - closed
 
 permissions:
   contents: read
@@ -15,7 +18,8 @@ concurrency:
 
 jobs:
   tests:
-    name: Run API tests - Regression Suite
+    if: ${{ github.event.pull_request.merged == true }}
+    name: Run Regression Suite
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -49,22 +53,22 @@ jobs:
       - name: Clean previous build
         run: ./gradlew clean
 
-      - name: Restore Allure history
+      - name: Restore regression Allure history
         uses: actions/cache/restore@v4
         with:
           path: allure-history
-          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+          key: allure-history-regression-master-${{ github.run_id }}
           restore-keys: |
-            allure-history-${{ github.ref_name }}-
+            allure-history-regression-master-
 
       - name: Add previous history to Allure results
         run: |
           if [ -d "allure-history" ]; then
             mkdir -p build/allure-results/history
             cp -r allure-history/. build/allure-results/history/
-            echo "Previous Allure history restored"
+            echo "Previous regression history restored"
           else
-            echo "No previous Allure history found"
+            echo "No previous regression history found"
           fi
 
       - name: Run regression tests
@@ -76,38 +80,47 @@ jobs:
         if: always()
         run: |
           test -f build/allure-report/index.html
-          echo "Allure report generated successfully"
+          echo "Regression Allure report generated successfully"
 
-      - name: Collect updated Allure history
+      - name: Collect updated regression history
         if: always()
         run: |
           if [ -d "build/allure-report/history" ]; then
             rm -rf allure-history
             mkdir -p allure-history
             cp -r build/allure-report/history/. allure-history/
-            echo "Updated Allure history collected"
+            echo "Updated regression history collected"
           else
-            echo "Allure history was not generated"
+            echo "Regression history was not generated"
           fi
 
-      - name: Save Allure history
+      - name: Save regression Allure history
         if: always()
         uses: actions/cache/save@v4
         with:
           path: allure-history
-          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+          key: allure-history-regression-master-${{ github.run_id }}
 
       - name: Add .nojekyll
         if: always()
         run: touch build/allure-report/.nojekyll
 
-      - name: Upload Allure results
+      - name: Upload regression Allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results-${{ github.ref_name }}-${{ github.run_number }}
+          name: regression-allure-results-${{ github.run_number }}
           path: build/allure-results
           retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload regression Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-allure-report-${{ github.run_number }}
+          path: build/allure-report
+          retention-days: 14
           if-no-files-found: warn
 
       - name: Configure GitHub Pages
@@ -128,9 +141,14 @@ jobs:
           exit 1
 
   deploy:
-    name: Publish Allure report
+    name: Publish Regression Allure report
     needs: tests
-    if: ${{ always() && needs.tests.result != 'cancelled' }}
+    if: >-
+      ${{
+        always() &&
+        github.event.pull_request.merged == true &&
+        needs.tests.result != 'cancelled'
+      }}
     runs-on: ubuntu-latest
 
     environment:
@@ -138,6 +156,6 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Deploy Allure report to GitHub Pages
+      - name: Deploy Regression Allure report to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
