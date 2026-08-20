@@ -3,7 +3,6 @@ package api.tests;
 import api.client.PetApiClient;
 import api.factory.PetDataFactory;
 import api.model.Pet;
-import io.qameta.allure.Allure;
 import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static io.qameta.allure.Allure.step;
 import static org.hamcrest.Matchers.equalTo;
 
 class PetCrudFlowTest {
@@ -46,7 +46,7 @@ class PetCrudFlowTest {
             cleanupRequired =
                     createResponse.statusCode() == SUCCESS_STATUS_CODE;
 
-            Allure.step(
+            step(
                     "Verify that the create-pet response is successful",
                     () -> assertResponseStatus(
                             createResponse,
@@ -54,7 +54,7 @@ class PetCrudFlowTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the created pet matches the submitted details",
                     () -> assertPetDetails(createResponse, petRequest)
             );
@@ -63,7 +63,7 @@ class PetCrudFlowTest {
             Response retrieveResponse =
                     petApiClient.getPet(petId);
 
-            Allure.step(
+            step(
                     "Verify that the retrieve-pet response is successful",
                     () -> assertResponseStatus(
                             retrieveResponse,
@@ -71,7 +71,7 @@ class PetCrudFlowTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the retrieved pet matches the created pet",
                     () -> assertPetDetails(retrieveResponse, petRequest)
             );
@@ -83,7 +83,7 @@ class PetCrudFlowTest {
             Response updateResponse =
                     petApiClient.updatePet(updatedPet);
 
-            Allure.step(
+            step(
                     "Verify that the update-pet response is successful",
                     () -> assertResponseStatus(
                             updateResponse,
@@ -91,7 +91,7 @@ class PetCrudFlowTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the update response contains the new pet details",
                     () -> assertPetDetails(updateResponse, updatedPet)
             );
@@ -100,7 +100,7 @@ class PetCrudFlowTest {
             Response retrieveUpdatedResponse =
                     petApiClient.getPet(petId);
 
-            Allure.step(
+            step(
                     "Verify that the updated pet can be retrieved successfully",
                     () -> assertResponseStatus(
                             retrieveUpdatedResponse,
@@ -108,7 +108,7 @@ class PetCrudFlowTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the updated pet details were persisted",
                     () -> assertPetDetails(
                             retrieveUpdatedResponse,
@@ -120,7 +120,7 @@ class PetCrudFlowTest {
             Response deleteResponse =
                     petApiClient.deletePet(petId);
 
-            Allure.step(
+            step(
                     "Verify that the delete-pet response is successful",
                     () -> assertResponseStatus(
                             deleteResponse,
@@ -132,7 +132,7 @@ class PetCrudFlowTest {
             Response retrieveDeletedResponse =
                     petApiClient.getPet(petId);
 
-            Allure.step(
+            step(
                     "Verify that the deleted pet no longer exists",
                     () -> assertResponseStatus(
                             retrieveDeletedResponse,

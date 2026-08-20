@@ -3,7 +3,6 @@ package api.tests;
 import api.client.PetApiClient;
 import api.factory.PetDataFactory;
 import api.model.Pet;
-import io.qameta.allure.Allure;
 import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static io.qameta.allure.Allure.step;
 import static org.hamcrest.Matchers.equalTo;
 
 @Tag("regression")
@@ -37,7 +37,7 @@ class PetOptionalFieldsTest {
             Response createResponse =
                     petApiClient.createPet(petRequest);
 
-            Allure.step(
+            step(
                     "Verify that the pet with optional fields was created successfully",
                     () -> assertResponseStatus(
                             createResponse,
@@ -45,7 +45,7 @@ class PetOptionalFieldsTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the create response contains category and tags",
                     () -> assertOptionalFields(
                             createResponse,
@@ -56,7 +56,7 @@ class PetOptionalFieldsTest {
             Response retrieveResponse =
                     petApiClient.getPet(petId);
 
-            Allure.step(
+            step(
                     "Verify that the pet with optional fields can be retrieved",
                     () -> assertResponseStatus(
                             retrieveResponse,
@@ -64,7 +64,7 @@ class PetOptionalFieldsTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that category and tags were persisted",
                     () -> assertOptionalFields(
                             retrieveResponse,
@@ -92,7 +92,7 @@ class PetOptionalFieldsTest {
             Response createResponse =
                     petApiClient.createPet(originalPet);
 
-            Allure.step(
+            step(
                     "Verify that the test pet was created successfully",
                     () -> assertResponseStatus(
                             createResponse,
@@ -108,7 +108,7 @@ class PetOptionalFieldsTest {
             Response updateResponse =
                     petApiClient.updatePet(updatedPet);
 
-            Allure.step(
+            step(
                     "Verify that the optional fields were updated successfully",
                     () -> assertResponseStatus(
                             updateResponse,
@@ -116,7 +116,7 @@ class PetOptionalFieldsTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the update response contains the new optional fields",
                     () -> assertOptionalFields(
                             updateResponse,
@@ -127,7 +127,7 @@ class PetOptionalFieldsTest {
             Response retrieveResponse =
                     petApiClient.getPet(petId);
 
-            Allure.step(
+            step(
                     "Verify that the updated pet can be retrieved",
                     () -> assertResponseStatus(
                             retrieveResponse,
@@ -135,7 +135,7 @@ class PetOptionalFieldsTest {
                     )
             );
 
-            Allure.step(
+            step(
                     "Verify that the updated category and tags were persisted",
                     () -> assertOptionalFields(
                             retrieveResponse,
