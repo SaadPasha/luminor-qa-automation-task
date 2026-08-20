@@ -1,11 +1,9 @@
 name: Run - Regression Suite
 
 on:
-  pull_request:
+  push:
     branches:
       - master
-    types:
-      - closed
 
 permissions:
   contents: read
@@ -18,7 +16,6 @@ concurrency:
 
 jobs:
   tests:
-    if: ${{ github.event.pull_request.merged == true }}
     name: Run Regression Suite
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -45,7 +42,7 @@ jobs:
           node-version: "24"
 
       - name: Install Allure CLI
-        run: npm install --global allure-commandline
+        run: npm install --global allure@3.15.0
 
       - name: Verify Allure CLI
         run: allure --version
@@ -61,11 +58,10 @@ jobs:
           restore-keys: |
             allure-history-regression-master-
 
-      - name: Add previous history to Allure results
+      - name: Prepare Allure history directory
         run: |
-          if [ -d "allure-history" ]; then
-            mkdir -p build/allure-results/history
-            cp -r allure-history/. build/allure-results/history/
+          mkdir -p allure-history
+          if [ -s "allure-history/history.jsonl" ]; then
             echo "Previous regression history restored"
           else
             echo "No previous regression history found"
@@ -82,17 +78,11 @@ jobs:
           test -f build/allure-report/index.html
           echo "Regression Allure report generated successfully"
 
-      - name: Collect updated regression history
+      - name: Verify updated regression history
         if: always()
         run: |
-          if [ -d "build/allure-report/history" ]; then
-            rm -rf allure-history
-            mkdir -p allure-history
-            cp -r build/allure-report/history/. allure-history/
-            echo "Updated regression history collected"
-          else
-            echo "Regression history was not generated"
-          fi
+          test -s allure-history/history.jsonl
+          echo "Regression history entries: $(wc -l < allure-history/history.jsonl)"
 
       - name: Save regression Allure history
         if: always()
@@ -143,12 +133,7 @@ jobs:
   deploy:
     name: Publish Regression Allure report
     needs: tests
-    if: >-
-      ${{
-        always() &&
-        github.event.pull_request.merged == true &&
-        needs.tests.result != 'cancelled'
-      }}
+    if: ${{ always() && needs.tests.result != 'cancelled' }}
     runs-on: ubuntu-latest
 
     environment:
