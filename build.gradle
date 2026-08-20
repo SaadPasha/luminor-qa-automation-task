@@ -49,6 +49,15 @@ dependencies {
 def allureResultsDir = layout.buildDirectory.dir('allure-results')
 def allureReportDir = layout.buildDirectory.dir('allure-report')
 
+def isWindows =
+        System.getProperty('os.name')
+                .toLowerCase()
+                .contains('windows')
+
+def allureCommand = isWindows
+        ? ['cmd', '/c', 'allure']
+        : ['allure']
+
 def allureReportTask = tasks.register('allureReport', Exec) {
     group = 'verification'
     description = 'Generates the Allure HTML report'
@@ -67,11 +76,14 @@ def allureReportTask = tasks.register('allureReport', Exec) {
         delete allureReportDir
     }
 
-    commandLine 'cmd', '/c',
-            'allure', 'generate',
-            '--output',
-            allureReportDir.get().asFile.absolutePath,
-            allureResultsDir.get().asFile.absolutePath
+    commandLine(
+            allureCommand + [
+                    'generate',
+                    '--output',
+                    allureReportDir.get().asFile.absolutePath,
+                    allureResultsDir.get().asFile.absolutePath
+            ]
+    )
 }
 
 tasks.withType(Test).configureEach {

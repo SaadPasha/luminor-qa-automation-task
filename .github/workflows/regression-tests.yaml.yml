@@ -1,4 +1,4 @@
-name: Regression Tests
+name: Run - Regression Suite
 
 on:
   workflow_dispatch:
@@ -35,52 +35,80 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Allure CLI
+        run: npm install --global allure-commandline
+
+      - name: Verify Allure CLI
+        run: allure --version
+
       - name: Clean previous build
         run: ./gradlew clean
 
       - name: Restore Allure history
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: build/allure-results/history
-          key: allure-history-${{ github.run_id }}
+          path: allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
-            allure-history-
+            allure-history-${{ github.ref_name }}-
+
+      - name: Add previous history to Allure results
+        run: |
+          if [ -d "allure-history" ]; then
+            mkdir -p build/allure-results/history
+            cp -r allure-history/. build/allure-results/history/
+            echo "Previous Allure history restored"
+          else
+            echo "No previous Allure history found"
+          fi
 
       - name: Run regression tests
         id: regression-tests
         continue-on-error: true
-        run: ./gradlew regressionTest
-
-      - name: Generate Allure report
-        if: always()
-        run: ./gradlew allureReport
+        run: ./gradlew regressionTest -Pheadless=true
 
       - name: Verify Allure report
         if: always()
         run: |
-          test -f build/reports/allure-report/allureReport/index.html
+          test -f build/allure-report/index.html
           echo "Allure report generated successfully"
 
-      - name: Preserve Allure history
+      - name: Collect updated Allure history
         if: always()
         run: |
-          rm -rf build/allure-results/history
-          mkdir -p build/allure-results/history
-          cp -r \
-            build/reports/allure-report/allureReport/history/. \
-            build/allure-results/history/
+          if [ -d "build/allure-report/history" ]; then
+            rm -rf allure-history
+            mkdir -p allure-history
+            cp -r build/allure-report/history/. allure-history/
+            echo "Updated Allure history collected"
+          else
+            echo "Allure history was not generated"
+          fi
+
+      - name: Save Allure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: Add .nojekyll
         if: always()
-        run: touch build/reports/allure-report/allureReport/.nojekyll
+        run: touch build/allure-report/.nojekyll
 
       - name: Upload Allure results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: allure-results
+          name: allure-results-${{ github.ref_name }}-${{ github.run_number }}
           path: build/allure-results
           retention-days: 7
+          if-no-files-found: warn
 
       - name: Configure GitHub Pages
         if: always()
@@ -91,12 +119,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           name: github-pages
-          path: build/reports/allure-report/allureReport
+          path: build/allure-report
 
-      - name: Fail workflow when tests failed
+      - name: Fail workflow when regression tests fail
         if: steps.regression-tests.outcome == 'failure'
         run: |
-          echo "One or more API tests failed"
+          echo "One or more regression tests failed"
           exit 1
 
   deploy:
