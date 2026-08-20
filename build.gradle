@@ -49,7 +49,6 @@ dependencies {
 def allureResultsDir = layout.buildDirectory.dir('allure-results')
 def allureReportDir = layout.buildDirectory.dir('allure-report')
 
-
 def isWindows =
         System.getProperty('os.name')
                 .toLowerCase()

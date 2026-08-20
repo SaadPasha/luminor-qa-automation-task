@@ -1,4 +1,4 @@
-name: Run API tests - Regression Suite
+name: Run - Regression Suite
 
 on:
   workflow_dispatch:
@@ -70,7 +70,7 @@ jobs:
       - name: Run regression tests
         id: regression-tests
         continue-on-error: true
-        run: ./gradlew regressionTest
+        run: ./gradlew regressionTest -Pheadless=true
 
       - name: Verify Allure report
         if: always()
