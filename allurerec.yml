@@ -1,0 +1,5 @@
+name: Luminor QA Automation Report
+output: ./build/allure-report
+historyPath: ./allure-history/history.jsonl
+appendHistory: true
+historyLimit: 20

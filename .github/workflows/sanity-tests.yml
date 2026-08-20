@@ -2,6 +2,8 @@ name: Run - Sanity Suite
 
 on:
   push:
+    branches-ignore:
+      - master
 
 permissions:
   contents: read
@@ -38,7 +40,7 @@ jobs:
           node-version: "24"
 
       - name: Install Allure CLI
-        run: npm install --global allure-commandline
+        run: npm install --global allure@3.15.0
 
       - name: Verify Allure CLI
         run: allure --version
@@ -54,11 +56,10 @@ jobs:
           restore-keys: |
             allure-history-sanity-${{ github.ref_name }}-
 
-      - name: Add previous history to Allure results
+      - name: Prepare Allure history directory
         run: |
-          if [ -d "allure-history" ]; then
-            mkdir -p build/allure-results/history
-            cp -r allure-history/. build/allure-results/history/
+          mkdir -p allure-history
+          if [ -s "allure-history/history.jsonl" ]; then
             echo "Previous sanity history restored"
           else
             echo "No previous sanity history found"
@@ -67,7 +68,7 @@ jobs:
       - name: Run sanity tests
         id: sanity-tests
         continue-on-error: true
-        run: ./gradlew sanityTest
+        run: ./gradlew sanityTest -Pheadless=true
 
       - name: Verify Allure report
         if: always()
@@ -75,17 +76,11 @@ jobs:
           test -f build/allure-report/index.html
           echo "Sanity Allure report generated successfully"
 
-      - name: Collect updated sanity history
+      - name: Verify updated sanity history
         if: always()
         run: |
-          if [ -d "build/allure-report/history" ]; then
-            rm -rf allure-history
-            mkdir -p allure-history
-            cp -r build/allure-report/history/. allure-history/
-            echo "Updated sanity history collected"
-          else
-            echo "Sanity history was not generated"
-          fi
+          test -s allure-history/history.jsonl
+          echo "Sanity history entries: $(wc -l < allure-history/history.jsonl)"
 
       - name: Save sanity Allure history
         if: always()
