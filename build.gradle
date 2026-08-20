@@ -85,6 +85,16 @@ tasks.withType(Test).configureEach {
     systemProperty 'allure.results.directory',
             allureResultsDir.get().asFile.absolutePath
 
+    systemProperty 'browser',
+            providers.gradleProperty('browser')
+                    .orElse('chrome')
+                    .get()
+
+    systemProperty 'headless',
+            providers.gradleProperty('headless')
+                    .orElse('false')
+                    .get()
+
     doFirst {
         jvmArgs "-javaagent:${configurations.aspectjAgent.singleFile}"
     }
